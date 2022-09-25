@@ -22,7 +22,7 @@ func (v *validatorPrivateData) SaveValidator(filePath string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filePath, validatorData, 0644)
+	return os.WriteFile(filePath, validatorData, 0o644)
 }
 
 func mustLoadValidator(filePath string) validatorPrivateData {
@@ -48,7 +48,11 @@ func newRandomValidator(gasLimit uint64, feeRecipient string) validatorPrivateDa
 
 func (v *validatorPrivateData) PrepareRegistrationMessage(builderSigningDomain boostTypes.Domain) ([]boostTypes.SignedValidatorRegistration, error) {
 	pk := boostTypes.PublicKey{}
-	pk.FromSlice(v.Pk)
+	err := pk.FromSlice(v.Pk)
+	if err != nil {
+		return []boostTypes.SignedValidatorRegistration{}, err
+	}
+
 	addr, err := boostTypes.HexToAddress(v.FeeRecipientHex)
 	if err != nil {
 		return []boostTypes.SignedValidatorRegistration{}, err

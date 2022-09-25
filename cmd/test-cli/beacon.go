@@ -20,7 +20,7 @@ type beaconBlockData struct {
 	BlockHash common.Hash
 }
 
-func createBeacon(isMergemock bool, beaconEndpoint string, engineEndpoint string) Beacon {
+func createBeacon(isMergemock bool, beaconEndpoint, engineEndpoint string) Beacon {
 	if isMergemock {
 		return &MergemockBeacon{engineEndpoint}
 	}
@@ -58,12 +58,12 @@ func getCurrentBeaconBlock(beaconEndpoint string) (beaconBlockData, error) {
 		return beaconBlockData{}, err
 	}
 
-	slot, err := strconv.Atoi(blockResp.Data.Message.Slot)
+	slot, err := strconv.ParseUint(blockResp.Data.Message.Slot, 10, 64)
 	if err != nil {
 		return beaconBlockData{}, err
 	}
 
-	return beaconBlockData{Slot: uint64(slot), BlockHash: blockResp.Data.Message.Body.ExecutionPayload.BlockHash}, err
+	return beaconBlockData{Slot: slot, BlockHash: blockResp.Data.Message.Body.ExecutionPayload.BlockHash}, err
 }
 
 // MergemockBeacon - fake beacon for use with mergemock relay's engine

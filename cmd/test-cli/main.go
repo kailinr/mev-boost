@@ -10,12 +10,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	boostTypes "github.com/flashbots/go-boost-utils/types"
-	"github.com/sirupsen/logrus"
-
 	"github.com/flashbots/mev-boost/server"
+	"github.com/sirupsen/logrus"
 )
 
-var log = logrus.WithField("service", "cmd/test-cli")
+var log = logrus.NewEntry(logrus.New())
 
 func doGenerateValidator(filePath string, gasLimit uint64, feeRecipient string) {
 	v := newRandomValidator(gasLimit, feeRecipient)
@@ -88,7 +87,7 @@ func doGetHeader(v validatorPrivateData, boostEndpoint string, beaconNode Beacon
 	return getHeaderResp
 }
 
-func doGetPayload(v validatorPrivateData, boostEndpoint string, beaconNode Beacon, engineEndpoint string, builderSigningDomain boostTypes.Domain, proposerSigningDomain boostTypes.Domain) {
+func doGetPayload(v validatorPrivateData, boostEndpoint string, beaconNode Beacon, engineEndpoint string, builderSigningDomain, proposerSigningDomain boostTypes.Domain) {
 	header := doGetHeader(v, boostEndpoint, beaconNode, engineEndpoint, builderSigningDomain)
 
 	blindedBeaconBlock := boostTypes.BlindedBeaconBlock{
@@ -104,7 +103,7 @@ func doGetPayload(v validatorPrivateData, boostEndpoint string, beaconNode Beaco
 			AttesterSlashings:      []*boostTypes.AttesterSlashing{},
 			Attestations:           []*boostTypes.Attestation{},
 			Deposits:               []*boostTypes.Deposit{},
-			VoluntaryExits:         []*boostTypes.VoluntaryExit{},
+			VoluntaryExits:         []*boostTypes.SignedVoluntaryExit{},
 			SyncAggregate:          &boostTypes.SyncAggregate{},
 			ExecutionPayloadHeader: header.Data.Message.Header,
 		},
@@ -179,11 +178,11 @@ func main() {
 
 	var gasLimit uint64
 	envGasLimitStr := getEnv("VALIDATOR_GAS_LIMIT", "30000000")
-	envGasLimit, err := strconv.Atoi(envGasLimitStr)
+	envGasLimit, err := strconv.ParseUint(envGasLimitStr, 10, 64)
 	if err != nil {
 		log.WithError(err).Fatal("invalid gas limit specified")
 	}
-	generateCommand.Uint64Var(&gasLimit, "gas-limit", uint64(envGasLimit), "Gas limit to register the validator with")
+	generateCommand.Uint64Var(&gasLimit, "gas-limit", envGasLimit, "Gas limit to register the validator with")
 
 	var validatorFeeRecipient string
 	envValidatorFeeRecipient := getEnv("VALIDATOR_FEE_RECIPIENT", "0x0000000000000000000000000000000000000000")
@@ -244,7 +243,7 @@ func main() {
 	}
 }
 
-func getEnv(key string, defaultValue string) string {
+func getEnv(key, defaultValue string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
